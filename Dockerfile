@@ -1,10 +1,15 @@
-FROM golang:1.11-stretch
+FROM golang:1.22 as build
 
-WORKDIR /go/src/github.com/ingenieux/ecr-login
+WORKDIR /app
 
-COPY . /go/src/github.com/ingenieux/ecr-login
+COPY . /app
 
-RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh && dep ensure && go get github.com/ingenieux/ecr-login/...
+RUN go get -u && \
+  CGO_ENABLED=0 go build -ldflags "-s -w" -o ecr-login .
 
-ENTRYPOINT /go/bin/ecr-login
+FROM alpine:latest
 
+WORKDIR /app
+COPY --from=build /app/ecr-login /app
+
+ENTRYPOINT ["/app/ecr-login"]
